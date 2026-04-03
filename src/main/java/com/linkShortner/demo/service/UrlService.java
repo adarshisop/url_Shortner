@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Random;
 
 @Service
@@ -67,6 +68,21 @@ public class UrlService {
         urlRepository.save(url);
 
         return url.getOriginalUrl();
+    }
+
+    public List<Url> getUrlsByUser(String email){
+       User user = userRepository.findByEmail(email).orElseThrow( () -> new RuntimeException("User not found"));
+       return urlRepository.findByUserId(user.getId());
+    }
+
+    public String deleteUrl(String shortCode , String email){
+       Url url = urlRepository.findByShortCode(shortCode)
+               .orElseThrow(() -> new RuntimeException("Url not found"));
+       if(!url.getUser().getEmail().equals(email)){
+           throw new RuntimeException("You are not authorized to delete this url");
+       }
+       urlRepository.delete(url);
+       return "Url deleted successfuly";
     }
 
 }
