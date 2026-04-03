@@ -5,8 +5,10 @@ import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.linkShortner.demo.DTO.ShortenRequest;
+import com.linkShortner.demo.entity.Click;
 import com.linkShortner.demo.entity.Url;
 import com.linkShortner.demo.entity.User;
+import com.linkShortner.demo.repository.ClickRepository;
 import com.linkShortner.demo.repository.UrlRepository;
 import com.linkShortner.demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +17,9 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 @Service
@@ -23,6 +27,8 @@ import java.util.Random;
 public class UrlService {
     private final UrlRepository urlRepository;
     private final UserRepository userRepository;
+    private final ClickRepository clickRepository;
+
     @Value("${app.base-url}")
     private String baseUrl;
    public String generateShortCode(){
@@ -82,6 +88,12 @@ public class UrlService {
             throw new RuntimeException("URL has expired");
         }
 
+        // record the click
+        Click click = new Click();
+        click.setUrl(url);
+        clickRepository.save(click);
+
+        // update total click count
         url.setClickCount(url.getClickCount() + 1);
         urlRepository.save(url);
 
@@ -117,6 +129,30 @@ public class UrlService {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         MatrixToImageWriter.writeToStream(bitMatrix , "PNG" , outputStream);
         return outputStream.toByteArray();
+    }
+
+    public Map<String, Long> getAnalytics(String shortCode, String email) {
+        Url url = urlRepository.findByShortCode(shortCode)
+                .orElseThrow(() -> new RuntimeException("URL not found"));
+
+        if (!url.getUser().getEmail().equals(email)) {
+            throw new RuntimeException("You are not authorized to view these analytics");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        Long today = clickRepository.countClicksSince(url, now.toLocalDate().atStartOfDay());
+        Long thisWeek = clickRepository.countClicksSince(url, now.minusDays(7));
+        Long thisMonth = clickRepository.countClicksSince(url, now.minusDays(30));
+        Long total = (long) clickRepository.findByUrl(url).size();
+
+        Map<String, Long> analytics = new HashMap<>();
+        analytics.put("today", today);
+        analytics.put("thisWeek", thisWeek);
+        analytics.put("thisMonth", thisMonth);
+        analytics.put("total", total);
+
+        return analytics;
     }
 
 }

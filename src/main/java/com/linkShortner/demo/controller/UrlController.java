@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @RestController
@@ -60,5 +61,12 @@ public class UrlController {
                 .header("Content-Type", "image/png")
                 .body(qrCode);
 
+    }
+
+    @GetMapping("/api/urls/{shortCode}/analytics")
+    public ResponseEntity<Map<String, Long>> getAnalytics(@PathVariable String shortCode) {
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Map<String, Long> analytics = urlService.getAnalytics(shortCode, email);
+        return ResponseEntity.ok(analytics);
     }
 }
