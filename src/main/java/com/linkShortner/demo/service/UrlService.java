@@ -1,5 +1,9 @@
 package com.linkShortner.demo.service;
 
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 import com.linkShortner.demo.DTO.ShortenRequest;
 import com.linkShortner.demo.entity.Url;
 import com.linkShortner.demo.entity.User;
@@ -9,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayOutputStream;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
 
@@ -47,14 +53,22 @@ public class UrlService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         String shortCode;
-        do {
-            shortCode = generateShortCode();
-        } while (urlRepository.findByShortCode(shortCode).isPresent());
+        if (request.getCustomCode() != null && !request.getCustomCode().isBlank()) {
+            if (urlRepository.findByShortCode(request.getCustomCode()).isPresent()) {
+                throw new RuntimeException("Custom code already taken");
+            }
+            shortCode = request.getCustomCode();
+        } else {
+            do {
+                shortCode = generateShortCode();
+            } while (urlRepository.findByShortCode(shortCode).isPresent());
+        }
 
         Url url = new Url();
         url.setOriginalUrl(request.getOriginalUrl());
         url.setShortCode(shortCode);
         url.setUser(user);
+        url.setExpiresAt(request.getExpiresAt());
         urlRepository.save(url);
 
         return baseUrl + "/" + shortCode;
@@ -63,6 +77,10 @@ public class UrlService {
     public String getOriginalUrl(String shortCode) {
         Url url = urlRepository.findByShortCode(shortCode)
                 .orElseThrow(() -> new RuntimeException("URL not found"));
+
+        if (url.getExpiresAt() != null && url.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("URL has expired");
+        }
 
         url.setClickCount(url.getClickCount() + 1);
         urlRepository.save(url);
@@ -83,6 +101,22 @@ public class UrlService {
        }
        urlRepository.delete(url);
        return "Url deleted successfuly";
+    }
+
+    public byte[] generateQrCode(String shortCode) throws Exception{
+       Url url = urlRepository.findByShortCode(shortCode)
+               .orElseThrow(() -> new RuntimeException("Url not found"));
+       String fullShortUrl = baseUrl + "/" + shortCode;
+        QRCodeWriter qrCodeWriter = new QRCodeWriter();
+        BitMatrix bitMatrix = qrCodeWriter.encode(
+                fullShortUrl ,
+                BarcodeFormat.QR_CODE,
+                200,
+                200
+        );
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        MatrixToImageWriter.writeToStream(bitMatrix , "PNG" , outputStream);
+        return outputStream.toByteArray();
     }
 
 }

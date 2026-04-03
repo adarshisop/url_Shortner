@@ -53,4 +53,12 @@ public class UrlController {
             return ResponseEntity.ok(result);
 
     }
+    @GetMapping("api/urls/{shortCode}/qr")
+    public ResponseEntity<byte[]> getQrCode(@PathVariable String shortCode) throws Exception{
+        byte[] qrCode = urlService.generateQrCode(shortCode);
+        return ResponseEntity.ok()
+                .header("Content-Type", "image/png")
+                .body(qrCode);
+
+    }
 }
