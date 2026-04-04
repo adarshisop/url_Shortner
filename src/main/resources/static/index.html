@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SnapURL</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --teal: #1D9E75;
+    --teal-dark: #0F6E56;
+    --teal-light: #E1F5EE;
+    --teal-mid: #9FE1CB;
+    --bg: #0f1117;
+    --bg2: #1a1d27;
+    --bg3: #22263a;
+    --border: rgba(255,255,255,0.08);
+    --text: #f0f0f0;
+    --text2: #9ca3af;
+    --text3: #6b7280;
+    --danger: #ef4444;
+    --success: #1D9E75;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* NAV */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    height: 60px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--teal);
+    letter-spacing: -0.5px;
+  }
+
+  .logo span { color: var(--text); }
+
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+
+  .btn {
+    padding: 8px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+
+  .btn-ghost:hover { background: var(--bg3); color: var(--text); }
+
+  .btn-primary {
+    background: var(--teal);
+    color: white;
+  }
+
+  .btn-primary:hover { background: var(--teal-dark); }
+
+  .btn-danger {
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid rgba(239,68,68,0.3);
+    font-size: 13px;
+    padding: 5px 12px;
+  }
+
+  .btn-danger:hover { background: rgba(239,68,68,0.1); }
+
+  .btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+
+  /* PAGES */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* HOME PAGE */
+  .hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 80px 1rem 40px;
+    text-align: center;
+  }
+
+  .hero h1 {
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: -1.5px;
+    line-height: 1.15;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+
+  .hero h1 span { color: var(--teal); }
+
+  .hero p {
+    color: var(--text2);
+    font-size: 17px;
+    max-width: 480px;
+    margin-bottom: 40px;
+  }
+
+  .shorten-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    width: 100%;
+    max-width: 600px;
+  }
+
+  .shorten-box .input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .shorten-box input[type="text"],
+  .shorten-box input[type="datetime-local"] {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    padding: 10px 14px;
+    font-size: 14px;
+    outline: none;
+    transition: border 0.15s;
+  }
+
+  .shorten-box input:focus { border-color: var(--teal); }
+  .shorten-box input::placeholder { color: var(--text3); }
+
+  .options-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .options-row label {
+    font-size: 12px;
+    color: var(--text3);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .result-box {
+    display: none;
+    background: var(--bg3);
+    border: 1px solid rgba(29,158,117,0.3);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-top: 16px;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .result-box.show { display: flex; }
+
+  .result-url {
+    flex: 1;
+    color: var(--teal);
+    font-size: 14px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .result-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+  .icon-btn {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text2);
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .icon-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--teal); }
+
+  .not-logged-in-msg {
+    font-size: 13px;
+    color: var(--text3);
+    text-align: center;
+    margin-top: 12px;
+  }
+
+  .not-logged-in-msg a {
+    color: var(--teal);
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .not-logged-in-msg a:hover { text-decoration: underline; }
+
+  /* AUTH MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.show { display: flex; }
+
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    width: 100%;
+    max-width: 420px;
+    position: relative;
+  }
+
+  .modal h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+
+  .modal p {
+    color: var(--text2);
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+
+  .form-group { margin-bottom: 16px; }
+
+  .form-group label {
+    display: block;
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 6px;
+  }
+
+  .form-group input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    padding: 10px 14px;
+    font-size: 14px;
+    outline: none;
+    transition: border 0.15s;
+  }
+
+  .form-group input:focus { border-color: var(--teal); }
+  .form-group input::placeholder { color: var(--text3); }
+
+  .modal .btn-primary { width: 100%; padding: 11px; font-size: 15px; margin-top: 8px; }
+
+  .modal-footer {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 13px;
+    color: var(--text3);
+  }
+
+  .modal-footer a {
+    color: var(--teal);
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: var(--text3);
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .modal-close:hover { color: var(--text); }
+
+  .error-msg {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: var(--radius-sm);
+    color: #f87171;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    display: none;
+  }
+
+  .error-msg.show { display: block; }
+
+  /* DASHBOARD */
+  .dashboard {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 1.5rem;
+  }
+
+  .dashboard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }
+
+  .dashboard-header h2 {
+    font-size: 24px;
+    font-weight: 700;
+  }
+
+  .links-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .link-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+
+  .link-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .link-short {
+    color: var(--teal);
+    font-weight: 600;
+    font-size: 15px;
+  }
+
+  .link-card-actions { display: flex; gap: 8px; align-items: center; }
+
+  .link-original {
+    color: var(--text3);
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 500px;
+    margin-bottom: 10px;
+  }
+
+  .link-meta {
+    display: flex;
+    gap: 20px;
+    font-size: 12px;
+    color: var(--text3);
+  }
+
+  .link-meta span { display: flex; align-items: center; gap: 4px; }
+
+  .badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+
+  .badge-success {
+    background: rgba(29,158,117,0.15);
+    color: var(--teal);
+    border: 1px solid rgba(29,158,117,0.3);
+  }
+
+  .badge-expired {
+    background: rgba(239,68,68,0.1);
+    color: #f87171;
+    border: 1px solid rgba(239,68,68,0.2);
+  }
+
+  /* ANALYTICS PANEL */
+  .analytics-panel {
+    display: none;
+    background: var(--bg3);
+    border-top: 1px solid var(--border);
+    margin-top: 14px;
+    padding-top: 14px;
+  }
+
+  .analytics-panel.show { display: block; }
+
+  .analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    text-align: center;
+  }
+
+  .stat-card .stat-label {
+    font-size: 11px;
+    color: var(--text3);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .stat-card .stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--teal);
+  }
+
+  /* QR MODAL */
+  .qr-img {
+    display: block;
+    margin: 16px auto 0;
+    border-radius: var(--radius-sm);
+    background: white;
+    padding: 12px;
+  }
+
+  /* LOADING */
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: inline-block;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text3);
+  }
+
+  .empty-state p { margin-top: 12px; font-size: 15px; }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--bg2);
+    border: 1px solid var(--teal);
+    border-radius: var(--radius-sm);
+    padding: 12px 18px;
+    font-size: 14px;
+    color: var(--teal);
+    z-index: 999;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.2s;
+    pointer-events: none;
+  }
+
+  .toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Snap<span>URL</span></div>
+  <div class="nav-right" id="nav-right">
+    <button class="btn btn-ghost" onclick="showModal('login')">Log in</button>
+    <button class="btn btn-primary" onclick="showModal('register')">Sign up</button>
+  </div>
+</nav>
+
+<!-- HOME PAGE -->
+<div class="page active" id="page-home">
+  <div class="hero">
+    <h1>Shorten. Share.<br><span>Track.</span></h1>
+    <p>Create short links with analytics, custom codes, expiry dates and QR codes.</p>
+
+    <div class="shorten-box">
+      <div class="input-row">
+        <input type="text" id="long-url" placeholder="Paste your long URL here..." />
+        <button class="btn btn-primary" onclick="handleShorten()" id="shorten-btn">Shorten</button>
+      </div>
+
+      <div class="options-row" id="options-row" style="display:none">
+        <div>
+          <label>Custom code (optional)</label>
+          <input type="text" id="custom-code" placeholder="e.g. mylink" />
+        </div>
+        <div>
+          <label>Expires at (optional)</label>
+          <input type="datetime-local" id="expires-at" />
+        </div>
+      </div>
+
+      <div class="result-box" id="result-box">
+        <span class="result-url" id="result-url"></span>
+        <div class="result-actions">
+          <button class="icon-btn" onclick="copyResult()" title="Copy">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy
+          </button>
+          <button class="icon-btn" onclick="showQr()" title="QR Code" id="qr-btn" style="display:none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="7" y="7" width="1" height="1" fill="currentColor"/><rect x="16" y="7" width="1" height="1" fill="currentColor"/><rect x="7" y="16" width="1" height="1" fill="currentColor"/><path d="M14 14h3v3h-3zM17 17h3v3h-3zM14 20h3"/></svg>
+            QR
+          </button>
+        </div>
+      </div>
+
+      <p class="not-logged-in-msg" id="login-prompt">
+        <a onclick="showModal('login')">Log in</a> or <a onclick="showModal('register')">sign up</a> to use custom codes, expiry dates and analytics.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD PAGE -->
+<div class="page" id="page-dashboard">
+  <div class="dashboard">
+    <div class="dashboard-header">
+      <h2>My Links</h2>
+      <button class="btn btn-primary btn-sm" onclick="showPage('home')">+ New Link</button>
+    </div>
+    <div class="links-grid" id="links-grid">
+      <div class="empty-state">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <p>No links yet. Create your first one!</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="auth-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <h2 id="modal-title">Welcome back</h2>
+    <p id="modal-subtitle">Log in to your SnapURL account</p>
+    <div class="error-msg" id="auth-error"></div>
+
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="auth-email" placeholder="you@example.com" />
+    </div>
+
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="auth-password" placeholder="••••••••" />
+    </div>
+
+    <button class="btn btn-primary" onclick="handleAuth()" id="auth-btn">Log in</button>
+
+    <div class="modal-footer">
+      <span id="modal-switch-text">Don't have an account? </span>
+      <a id="modal-switch-link" onclick="toggleAuthMode()">Sign up</a>
+    </div>
+  </div>
+</div>
+
+<!-- QR MODAL -->
+<div class="modal-overlay" id="qr-modal">
+  <div class="modal" style="max-width:320px; text-align:center;">
+    <button class="modal-close" onclick="document.getElementById('qr-modal').classList.remove('show')">×</button>
+    <h2>QR Code</h2>
+    <p id="qr-short-url" style="word-break:break-all;"></p>
+    <img id="qr-image" class="qr-img" width="200" height="200" alt="QR Code" />
+    <button class="btn btn-primary" style="margin-top:16px;width:100%;" onclick="downloadQr()">Download</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://localhost:8080';
+let token = localStorage.getItem('snapurl_token');
+let userEmail = localStorage.getItem('snapurl_email');
+let authMode = 'login';
+let lastShortCode = null;
+
+function init() {
+  if (token) {
+    setLoggedIn();
+  }
+}
+
+function setLoggedIn() {
+  document.getElementById('nav-right').innerHTML = `
+    <span style="font-size:13px;color:var(--text2);">${userEmail}</span>
+    <button class="btn btn-ghost btn-sm" onclick="showPage('dashboard');loadLinks()">My Links</button>
+    <button class="btn btn-ghost btn-sm" onclick="logout()">Log out</button>
+  `;
+  document.getElementById('login-prompt').style.display = 'none';
+  document.getElementById('options-row').style.display = 'grid';
+}
+
+function logout() {
+  token = null;
+  userEmail = null;
+  localStorage.removeItem('snapurl_token');
+  localStorage.removeItem('snapurl_email');
+  location.reload();
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+}
+
+function showModal(mode) {
+  authMode = mode;
+  document.getElementById('auth-modal').classList.add('show');
+  document.getElementById('auth-error').classList.remove('show');
+  document.getElementById('auth-email').value = '';
+  document.getElementById('auth-password').value = '';
+  updateModalUI();
+}
+
+function updateModalUI() {
+  const isLogin = authMode === 'login';
+  document.getElementById('modal-title').textContent = isLogin ? 'Welcome back' : 'Create account';
+  document.getElementById('modal-subtitle').textContent = isLogin ? 'Log in to your SnapURL account' : 'Start shortening links for free';
+  document.getElementById('auth-btn').textContent = isLogin ? 'Log in' : 'Sign up';
+  document.getElementById('modal-switch-text').textContent = isLogin ? "Don't have an account? " : 'Already have an account? ';
+  document.getElementById('modal-switch-link').textContent = isLogin ? 'Sign up' : 'Log in';
+}
+
+function toggleAuthMode() {
+  authMode = authMode === 'login' ? 'register' : 'login';
+  updateModalUI();
+  document.getElementById('auth-error').classList.remove('show');
+}
+
+function closeModal() {
+  document.getElementById('auth-modal').classList.remove('show');
+}
+
+async function handleAuth() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-error');
+  const btn = document.getElementById('auth-btn');
+
+  if (!email || !password) {
+    showError(errEl, 'Please fill in all fields');
+    return;
+  }
+
+  btn.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true;
+
+  try {
+    if (authMode === 'register') {
+      const res = await fetch(`${API}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.text();
+      if (!res.ok) { showError(errEl, data); return; }
+      authMode = 'login';
+    }
+
+    const res = await fetch(`${API}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.text();
+    if (!res.ok) { showError(errEl, data); return; }
+
+    token = data;
+    userEmail = email;
+    localStorage.setItem('snapurl_token', token);
+    localStorage.setItem('snapurl_email', email);
+    closeModal();
+    setLoggedIn();
+    showToast('Logged in successfully');
+  } catch(e) {
+    showError(errEl, 'Cannot connect to server. Make sure the backend is running.');
+  } finally {
+    btn.textContent = authMode === 'login' ? 'Log in' : 'Sign up';
+    btn.disabled = false;
+  }
+}
+
+function showError(el, msg) {
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+async function handleShorten() {
+  const url = document.getElementById('long-url').value.trim();
+  const customCode = document.getElementById('custom-code').value.trim();
+  const expiresAt = document.getElementById('expires-at').value;
+  const btn = document.getElementById('shorten-btn');
+
+  if (!url) return;
+
+  if (!token) {
+    const body = { originalUrl: url };
+    btn.innerHTML = '<span class="spinner"></span>';
+    btn.disabled = true;
+    try {
+      const res = await fetch(`${API}/api/urls/shorten`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) { showToast(await res.text(), true); return; }
+      const shortUrl = await res.text();
+      showResult(shortUrl, false);
+    } catch(e) {
+      showToast('Cannot connect to server', true);
+    } finally {
+      btn.textContent = 'Shorten';
+      btn.disabled = false;
+    }
+    return;
+  }
+
+  const body = { originalUrl: url };
+  if (customCode) body.customCode = customCode;
+  if (expiresAt) body.expiresAt = expiresAt + ':00';
+
+  btn.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${API}/api/urls/shorten`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify(body)
+    });
+    const data = await res.text();
+    if (!res.ok) { showToast(data, true); return; }
+    const code = data.split('/').pop();
+    lastShortCode = code;
+    showResult(data, true);
+  } catch(e) {
+    showToast('Cannot connect to server', true);
+  } finally {
+    btn.textContent = 'Shorten';
+    btn.disabled = false;
+  }
+}
+
+function showResult(shortUrl, showQrBtn) {
+  document.getElementById('result-url').textContent = shortUrl;
+  document.getElementById('result-box').classList.add('show');
+  document.getElementById('qr-btn').style.display = showQrBtn ? 'flex' : 'none';
+}
+
+function copyResult() {
+  const url = document.getElementById('result-url').textContent;
+  navigator.clipboard.writeText(url);
+  showToast('Copied to clipboard');
+}
+
+async function showQr() {
+  if (!lastShortCode) return;
+  try {
+    const res = await fetch(`${API}/api/urls/${lastShortCode}/qr`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const imgUrl = URL.createObjectURL(blob);
+    document.getElementById('qr-image').src = imgUrl;
+    document.getElementById('qr-short-url').textContent = document.getElementById('result-url').textContent;
+    document.getElementById('qr-modal').classList.add('show');
+  } catch(e) {
+    showToast('Failed to load QR code', true);
+  }
+}
+
+function downloadQr() {
+  const img = document.getElementById('qr-image');
+  const a = document.createElement('a');
+  a.href = img.src;
+  a.download = 'qrcode.png';
+  a.click();
+}
+
+async function loadLinks() {
+  const grid = document.getElementById('links-grid');
+  grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)"><span class="spinner"></span></div>';
+
+  try {
+    const res = await fetch(`${API}/api/urls/my-links`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) return;
+    const links = await res.json();
+
+    if (links.length === 0) {
+      grid.innerHTML = `<div class="empty-state">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <p>No links yet. <a onclick="showPage('home')" style="color:var(--teal);cursor:pointer;">Create your first one</a></p>
+      </div>`;
+      return;
+    }
+
+    grid.innerHTML = links.map(link => {
+      const isExpired = link.expiresAt && new Date(link.expiresAt) < new Date();
+      const shortUrl = `http://localhost:8080/${link.shortCode}`;
+      return `
+      <div class="link-card" id="card-${link.shortCode}">
+        <div class="link-card-top">
+          <span class="link-short">${shortUrl}</span>
+          <div class="link-card-actions">
+            <span class="badge ${isExpired ? 'badge-expired' : 'badge-success'}">${isExpired ? 'Expired' : 'Active'}</span>
+            <button class="icon-btn btn-sm" onclick="copyText('${shortUrl}')">Copy</button>
+            <button class="icon-btn btn-sm" onclick="toggleAnalytics('${link.shortCode}')">Analytics</button>
+            <button class="icon-btn btn-sm" onclick="loadQr('${link.shortCode}')">QR</button>
+            <button class="btn btn-danger" onclick="deleteLink('${link.shortCode}')">Delete</button>
+          </div>
+        </div>
+        <div class="link-original">${link.originalUrl}</div>
+        <div class="link-meta">
+          <span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            ${link.clickCount} clicks
+          </span>
+          ${link.expiresAt ? `<span>Expires: ${new Date(link.expiresAt).toLocaleDateString()}</span>` : ''}
+          <span>Created: ${new Date(link.createdAt).toLocaleDateString()}</span>
+        </div>
+        <div class="analytics-panel" id="analytics-${link.shortCode}">
+          <div class="analytics-grid" id="analytics-grid-${link.shortCode}">
+            <div style="text-align:center;padding:20px;color:var(--text3)">Loading...</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">Failed to load links</div>';
+  }
+}
+
+async function toggleAnalytics(shortCode) {
+  const panel = document.getElementById('analytics-' + shortCode);
+  const grid = document.getElementById('analytics-grid-' + shortCode);
+
+  if (panel.classList.contains('show')) {
+    panel.classList.remove('show');
+    return;
+  }
+
+  panel.classList.add('show');
+
+  try {
+    const res = await fetch(`${API}/api/urls/${shortCode}/analytics`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+
+    grid.innerHTML = `
+      <div class="stat-card"><div class="stat-label">Today</div><div class="stat-value">${data.today}</div></div>
+      <div class="stat-card"><div class="stat-label">This Week</div><div class="stat-value">${data.thisWeek}</div></div>
+      <div class="stat-card"><div class="stat-label">This Month</div><div class="stat-value">${data.thisMonth}</div></div>
+      <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${data.total}</div></div>
+    `;
+  } catch(e) {
+    grid.innerHTML = '<div style="color:var(--text3);font-size:13px;">Failed to load analytics</div>';
+  }
+}
+
+async function loadQr(shortCode) {
+  try {
+    const res = await fetch(`${API}/api/urls/${shortCode}/qr`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const imgUrl = URL.createObjectURL(blob);
+    document.getElementById('qr-image').src = imgUrl;
+    document.getElementById('qr-short-url').textContent = `http://localhost:8080/${shortCode}`;
+    document.getElementById('qr-modal').classList.add('show');
+  } catch(e) {
+    showToast('Failed to load QR code', true);
+  }
+}
+
+async function deleteLink(shortCode) {
+  if (!confirm('Delete this link?')) return;
+  try {
+    const res = await fetch(`${API}/api/urls/${shortCode}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) return;
+    document.getElementById('card-' + shortCode).remove();
+    showToast('Link deleted');
+  } catch(e) {
+    showToast('Failed to delete', true);
+  }
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text);
+  showToast('Copied to clipboard');
+}
+
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = isError ? 'var(--danger)' : 'var(--teal)';
+  t.style.color = isError ? '#f87171' : 'var(--teal)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+document.getElementById('long-url').addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleShorten();
+});
+
+init();
+</script>
+</body>
+</html>

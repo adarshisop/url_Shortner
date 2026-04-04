@@ -29,7 +29,11 @@ public class UrlController {
     }
     @GetMapping("/{shortCode}")
     public ResponseEntity<Void> redirect(@PathVariable String shortCode ){
-
+        if (shortCode.equals("index.html")) {
+            return ResponseEntity.status(302)
+                    .location(URI.create("/index.html"))
+                    .build();
+        }
            String originalUrl =  urlService.getOriginalUrl(shortCode);
            return ResponseEntity.status(302)
                    .location(URI.create(originalUrl))

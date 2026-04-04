@@ -13,6 +13,7 @@ import com.linkShortner.demo.repository.UrlRepository;
 import com.linkShortner.demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -28,6 +29,7 @@ public class UrlService {
     private final UrlRepository urlRepository;
     private final UserRepository userRepository;
     private final ClickRepository clickRepository;
+    private final RedisTemplate<String , String> redisTemplate;
 
     @Value("${app.base-url}")
     private String baseUrl;
@@ -81,7 +83,12 @@ public class UrlService {
     }
 
     public String getOriginalUrl(String shortCode) {
-        Url url = urlRepository.findByShortCode(shortCode)
+        String cachedUrl = redisTemplate.opsForValue().get(shortCode);
+        if (cachedUrl != null) {
+            return cachedUrl;
+        }
+
+       Url url = urlRepository.findByShortCode(shortCode)
                 .orElseThrow(() -> new RuntimeException("URL not found"));
 
         if (url.getExpiresAt() != null && url.getExpiresAt().isBefore(LocalDateTime.now())) {
@@ -96,6 +103,9 @@ public class UrlService {
         // update total click count
         url.setClickCount(url.getClickCount() + 1);
         urlRepository.save(url);
+
+        // store in cache for next time
+        redisTemplate.opsForValue().set(shortCode, url.getOriginalUrl(), 24, java.util.concurrent.TimeUnit.HOURS);
 
         return url.getOriginalUrl();
     }
@@ -112,6 +122,8 @@ public class UrlService {
            throw new RuntimeException("You are not authorized to delete this url");
        }
        urlRepository.delete(url);
+        urlRepository.delete(url);
+        redisTemplate.delete(shortCode); // remove from cache
        return "Url deleted successfuly";
     }
 
