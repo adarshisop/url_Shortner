@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -105,7 +106,7 @@ public class UrlService {
         urlRepository.save(url);
 
         // store in cache for next time
-        redisTemplate.opsForValue().set(shortCode, url.getOriginalUrl(), 24, java.util.concurrent.TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(shortCode, url.getOriginalUrl(), 1, TimeUnit.MINUTES);
 
         return url.getOriginalUrl();
     }
