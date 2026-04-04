@@ -106,7 +106,7 @@ public class UrlService {
         urlRepository.save(url);
 
         // store in cache for next time
-        redisTemplate.opsForValue().set(shortCode, url.getOriginalUrl(), 1, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(shortCode, url.getOriginalUrl(), 12, TimeUnit.HOURS);
 
         return url.getOriginalUrl();
     }
