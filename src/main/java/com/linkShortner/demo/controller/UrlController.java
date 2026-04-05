@@ -73,4 +73,9 @@ public class UrlController {
         Map<String, Long> analytics = urlService.getAnalytics(shortCode, email);
         return ResponseEntity.ok(analytics);
     }
+
+    @GetMapping("/health")
+    public ResponseEntity<String> health() {
+        return ResponseEntity.ok("UP");
+    }
 }
